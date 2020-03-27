@@ -1,3 +1,5 @@
+;Read a number, calculate  and print the result of 1+(1+2)+...+(1+2...+n). Using recursion.
+
 num: dw 0
 @1: dw 1
 totalSum: dw 0
