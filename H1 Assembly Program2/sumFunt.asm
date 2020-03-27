@@ -1,3 +1,8 @@
+;Read a number, calculate  and print the result of 1+(1+2)+...+(1+2...+n). You need to use a function to calculate 1+2+...+k.
+
+;Read a number, calculate  and print the result of 1+(1+2)+...+(1+2...+n). Using recursion.
+
+
 num: dw 0
 @1: dw 1
 sum: dw 0
