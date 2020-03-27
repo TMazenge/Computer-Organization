@@ -1,0 +1,143 @@
+Horizontal Microcode Assembler Version 4.0      Wed Mar 25 21:01:54 2020
+
+  LOC    OBJECT    SOURCE
+hex*dec
+
+                   /  Basic Instruction Set Horizontal Microcode    b.has
+                   
+                   / The label indicates the opcode decoded up to that point.
+                   / For example, control reaches the label L011 when opcode 
+                   / bits 011 have been decoded.   
+                   
+                   /***********************************************************
+                   /     Fetch instruction and increment pc register           
+                   /***********************************************************
+0  *0    304D2000  fetch: mar = pc; pc = pc + 1;             / increment pc
+1  *1    00001000         rd;                                / fetch mach inst
+2  *2    49400000         ir = mdr;                          / put mach inst in
+                   /***********************************************************
+                   /      Decode opcode                                        
+                   /***********************************************************
+3  *3    52400208         dc = ir; if(s) goto L1             / test 1st bit
+4  *4    5281820B  L0:    dc = left(dc); if (s) goto L01;    / test 2nd bit
+5  *5    5281820F  L00:   dc = left(dc); if (s) goto L001;   / test 3rd bot
+6  *6    52818220  L000:  dc = left(dc); if (s) goto L0001;  / test 4th bit 
+7  *7    0000061D         goto L0000; 
+8  *8    5281820D  L1:    dc = left(dc); if (s) goto L11;    / test 2nd bit
+9  *9    52818215  L10:   dc = left(dc); if (s) goto L101;   / test 3rd bit
+A  *10   00000613         goto L100;
+B  *11   52818217  L01:   dc = left(dc); if (s) goto L011;   / test 3rd bit
+C  *12   00000611         goto L010;
+D  *13   5281821B  L11:   dc = left(dc); if (s) goto L111;   / test 3rd bit
+E  *14   00000619         goto L110;
+F  *15   52818225  L001:  dc = left(dc); if (s) goto L0011;  / test 4th bit
+10 *16   00000623         goto L0010;
+11 *17   5281822E  L010:  dc = left(dc); if (s) goto L0101;  / test 4th bit
+12 *18   00000629         goto L0100;
+13 *19   5281823B  L100:  dc = left(dc); if (s) goto L1000;  / test 4th bit
+14 *20   0000063F         goto L1001;
+15 *21   52818243  L101:  dc = left(dc); if (s) goto L1011;  / test 4th bit
+16 *22   00000642         goto L1010;
+17 *23   52818236  L011:  dc = left(dc); if (s) goto L0111;  / test 4th bit
+18 *24   00000632         goto L0110;
+19 *25   5281824C  L110:  dc = left(dc); if (s) goto L1101;  / test 4th bit
+1A *26   00000649         goto L1100;
+1B *27   52818250  L111:  dc = left(dc); if (s) goto L1111; / test 4th bit
+1C *28   0000064E         goto L1110;
+                   
+                   /***********************************************************
+                   /      Microcode for each instruction                       
+                   /***********************************************************
+                   L0000:  /-------------------------- LD ---------------------
+1D *29   00122000         mar = ir;                          / get add from ins
+1E *30   00001000         rd;                                / read operand
+1F *31   41400600         ac = mdr; goto fetch;              / load ac with ope
+                   
+                   L0001:  /--------------------------- SUB -------------------
+20 *32   00122000         mar = ir;
+21 *33   00001000         rd;
+22 *34   420B4600         ac = ac - mdr; goto fetch;
+                   
+                   L0010:  /-------------------------- ST ---------------------
+23 *35   2A122000         mar = ir; mdr = ac;                / prepare for writ
+24 *36   00000E00         wr; goto fetch;                    / write
+                   
+                   L0011:  /------------------------- SUBR --------------------
+25 *37   5A4F0000         tmp = ir + sp
+26 *38   00162000         mar = tmp;
+27 *39   00001000         rd;
+28 *40   420B4600         ac = ac - mdr; goto fetch;
+                   
+                   L0100:  /-------------------------- STI --------------------
+29 *41   000E2000         mar = sp;
+2A *42   00001000         rd;
+2B *43   00102000         mar = ac;
+2C *44   00000800         wr;
+2D *45   39C30600         sp = sp + 1; goto fetch;
+                   
+                   L0101:  /---------------------------- PUSH -----------------
+2E *46   39C34000         sp = sp - 1;
+2F *47   000E2000         mar = sp;
+30 *48   2A000000         mdr = ac;
+31 *49   00000E00         wr; goto fetch;
+                   
+                   L0110:  /-------------------------- POP --------------------
+32 *50   000E2000          mar = sp;
+33 *51   00001000          rd;
+34 *52   41400000          ac = mdr;
+35 *53   39C30600          sp = sp + 1; goto fetch;
+                       
+                   L0111:  /--------------------------- CALL ------------------
+36 *54   39C34000         sp = sp - 1;
+37 *55   000E2000         mar = sp;
+38 *56   29800000         mdr = pc;
+39 *57   00000800         wr;
+3A *58   32400600         pc = ir; goto fetch;
+                   
+                   L1000:  /-------------------------- RET --------------------
+3B *59   000E2000         mar = sp;
+3C *60   00001000         rd;
+3D *61   31400000         pc = mdr;
+3E *62   39C30600         sp = sp + 1; goto fetch;
+                   L1001:  /--------------------------- SWAP ------------------
+3F *63   5A000000         tmp = ac;
+40 *64   41C00000         ac = sp;
+41 *65   3AC00600         sp = tmp; goto fetch;
+                          
+                   L1010:  /-------------------------- FLIP -------------------
+42 *66   42004600         ac = ~ac; goto fetch               / bitwise compl ac
+                   
+                   L1011:  /--------------------------- DIV -------------------
+43 *67   58000000         tmp = 0;
+44 *68   4A448000         ir = ir & xmask;
+45 *69   42134000         ac = ac - ir;
+46 *70   02000200         0 = ac; if (s) goto fetch;
+47 *71   5AC30000         tmp = tmp + 1;
+48 *72   00000643         goto L1011;
+                   
+                   L1100:  /-------------------------- MULT -------------------
+49 *73   00122000         mar = ir;                          / get add from ins
+4A *74   00001000         rd;                                / read operand
+4B *75   420AC600         ac = ac * mdr; goto fetch;         / mult ac by opera
+                   
+                   L1101: /---------------------------- JP --------------------
+4C *76   02000200         0 = ac; if (s) goto fetch;
+4D *77   00000650         goto dojn
+                          
+                   L1110: /-------------------------- JN ----------------------
+4E *78   02000250         0 = ac; if (s) goto dojn;          / branch if ac neg
+4F *79   00000600         goto fetch; 
+                   
+                   L1111: /-------------------------- NOT IMPLIMENTED ---------
+                                           
+50 *80   32448600  dojn:  pc = ir & xmask; goto fetch;       / put new add in p
+                   
+51 *81   ============= end of cpu.has ============================
+
+Input file   = cpu.has
+Output file  = cpu.hor
+List file    = cpu.hst 
+Config file  = cpu.cfg 
+Number base  = decimal
+Label status = case sensitive
+Shifter      = one-position

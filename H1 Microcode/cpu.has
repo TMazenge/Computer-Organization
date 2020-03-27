@@ -1,0 +1,129 @@
+/  Basic Instruction Set Horizontal Microcode    b.has
+
+/ The label indicates the opcode decoded up to that point.
+/ For example, control reaches the label L011 when opcode 
+/ bits 011 have been decoded.   
+
+/****************************************************************/
+/     Fetch instruction and increment pc register                /
+/****************************************************************/
+fetch: mar = pc; pc = pc + 1;             / increment pc
+       rd;                                / fetch mach inst
+       ir = mdr;                          / put mach inst in ir
+/****************************************************************/
+/      Decode opcode                                             /
+/****************************************************************/
+       dc = ir; if(s) goto L1             / test 1st bit
+L0:    dc = left(dc); if (s) goto L01;    / test 2nd bit
+L00:   dc = left(dc); if (s) goto L001;   / test 3rd bot
+L000:  dc = left(dc); if (s) goto L0001;  / test 4th bit 
+       goto L0000; 
+L1:    dc = left(dc); if (s) goto L11;    / test 2nd bit
+L10:   dc = left(dc); if (s) goto L101;   / test 3rd bit
+       goto L100;
+L01:   dc = left(dc); if (s) goto L011;   / test 3rd bit
+       goto L010;
+L11:   dc = left(dc); if (s) goto L111;   / test 3rd bit
+       goto L110;
+L001:  dc = left(dc); if (s) goto L0011;  / test 4th bit
+       goto L0010;
+L010:  dc = left(dc); if (s) goto L0101;  / test 4th bit
+       goto L0100;
+L100:  dc = left(dc); if (s) goto L1000;  / test 4th bit
+       goto L1001;
+L101:  dc = left(dc); if (s) goto L1011;  / test 4th bit
+       goto L1010;
+L011:  dc = left(dc); if (s) goto L0111;  / test 4th bit
+       goto L0110;
+L110:  dc = left(dc); if (s) goto L1101;  / test 4th bit
+       goto L1100;
+L111:  dc = left(dc); if (s) goto L1111; / test 4th bit
+       goto L1110;
+
+/****************************************************************/
+/      Microcode for each instruction                            /
+/****************************************************************/
+L0000:  /-------------------------- LD ----------------------------
+       mar = ir;                          / get add from inst      
+       rd;                                / read operand
+       ac = mdr; goto fetch;              / load ac with operand
+
+L0001:  /--------------------------- SUB --------------------------
+       mar = ir;
+       rd;
+       ac = ac - mdr; goto fetch;
+
+L0010:  /-------------------------- ST ----------------------------
+       mar = ir; mdr = ac;                / prepare for write     
+       wr; goto fetch;                    / write
+
+L0011:  /------------------------- SUBR --------------------------
+       tmp = ir + sp
+       mar = tmp;
+       rd;
+       ac = ac - mdr; goto fetch;
+
+L0100:  /-------------------------- STI --------------------------
+       mar = sp;
+       rd;
+       mar = ac;
+       wr;
+       sp = sp + 1; goto fetch;
+
+L0101:  /---------------------------- PUSH ------------------------
+       sp = sp - 1;
+       mar = sp;
+       mdr = ac;
+       wr; goto fetch;
+
+L0110:  /-------------------------- POP --------------------------
+        mar = sp;
+        rd;
+        ac = mdr;
+        sp = sp + 1; goto fetch;
+    
+L0111:  /--------------------------- CALL ------------------------
+       sp = sp - 1;
+       mar = sp;
+       mdr = pc;
+       wr;
+       pc = ir; goto fetch;
+
+L1000:  /-------------------------- RET --------------------------
+       mar = sp;
+       rd;
+       pc = mdr;
+       sp = sp + 1; goto fetch;
+L1001:  /--------------------------- SWAP -------------------------
+       tmp = ac;
+       ac = sp;
+       sp = tmp; goto fetch;
+       
+L1010:  /-------------------------- FLIP --------------------------
+       ac = ~ac; goto fetch               / bitwise compl ac
+
+L1011:  /--------------------------- DIV --------------------------
+       tmp = 0;
+       ir = ir & xmask;
+       ac = ac - ir;
+       0 = ac; if (s) goto fetch;
+       tmp = tmp + 1;
+       goto L1011;
+
+L1100:  /-------------------------- MULT --------------------------
+       mar = ir;                          / get add from inst      
+       rd;                                / read operand
+       ac = ac * mdr; goto fetch;         / mult ac by operand
+
+L1101: /---------------------------- JP ---------------------------
+       0 = ac; if (s) goto fetch;
+       goto dojn
+       
+L1110: /-------------------------- JN ----------------------------
+       0 = ac; if (s) goto dojn;          / branch if ac negATIVE
+       goto fetch; 
+
+L1111: /-------------------------- NOT IMPLIMENTED ---------------
+                        
+dojn:  pc = ir & xmask; goto fetch;       / put new add in pc
+

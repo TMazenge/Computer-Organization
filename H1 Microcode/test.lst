@@ -1,0 +1,82 @@
+Machine-level Assembler Version 4.0    Wed Mar 25 22:02:18 2020
+
+  LOC    OBJ   SOURCE
+hex*dec
+
+               !cpu
+               
+               ;checking sub 
+0  *0    001E  ld x
+1  *1    101F  sub y
+2  *2    201E  st x
+               
+               ;checking push
+3  *3    001E  ld x
+4  *4    5000  push
+               
+               ;checking sti
+5  *5    4000  sti
+               
+               ;checking subr
+6  *6    0020  ld s
+7  *7    3000  subr 0
+8  *8    2020  st s
+               
+               ;checking pop
+9  *9    0021  ld t
+A  *10   5000  push
+B  *11   001F  ld y
+C  *12   5000  push
+D  *13   0020  ld s
+E  *14   5000  push
+F  *15   6000  pop
+10 *16   6000  pop
+               
+               ;checking swap
+11 *17   001F  ld y
+12 *18   9000  swap
+               
+13 *19   0022  ld v
+14 *20   5000  push
+               ;checking call
+15 *21   701B  call subr2
+16 *22   201E  st x
+17 *23   6000  pop
+               
+               ;checking jp
+18 *24   0021  ld t
+19 *25   D000  jp
+1A *26   FFFF  halt
+               
+               
+               subr2:
+1B *27   0022  	ld v
+1C *28   3000  	subr 0
+1D *29   8000  	ret ;checking return
+               	
+1E *30   0008  x: dw 8
+1F *31   0004  y: dw 4
+20 *32   0005  s: dw 5
+21 *33   000A  t: dw 10
+22 *34   0002  v: dw 2
+23 *35   ========= end of test.asm ===============================
+
+
+         Symbol/Cross-Reference Table
+
+Symbol                   Address     References
+                          (hex)       (hex)
+
+ subr2                     1B          15 
+ x                         1E          0   2   3   16 
+ y                         1F          1   B   11 
+ s                         20          6   8   D  
+ t                         21          9   18 
+ v                         22          13  1B 
+
+Input file   = test.asm
+Output file  = test.mac
+List file    = test.lst 
+Config file  = cpu.cfg 
+Number base  = decimal
+Label status = case sensitive
